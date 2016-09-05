@@ -6,11 +6,34 @@
  *
  */
 
+#if defined (HAVE_SEMAPHORE_H)
+ #define HAVE_SEMAPHORES
+ #define HAVE_POSIX_SEMAPHORES
+#elif defined (_WIN32)
+ #define HAVE_SEMAPHORES
+ #define HAVE_WIN32_SEMAPHORES
+#endif
+
 #include <string.h>
 #include <time.h>
 
+#if defined (HAVE_POSIX_SEMAPHORES)
+ #include <errno.h>
+ #include <fcntl.h>
+ #include <semaphore.h>
+ #define SEMAPHORE_NAME_PREFIX "/transmission-session-"
+ #define BAD_SEMAPHORE SEM_FAILED
+ typedef sem_t * tr_semaphore_t;
+#elif defined (HAVE_WIN32_SEMAPHORES)
+ #include <windows.h>
+ #define SEMAPHORE_NAME_PREFIX "Global\\transmission-session-"
+ #define BAD_SEMAPHORE NULL
+ typedef HANDLE tr_semaphore_t;
+#endif
+
 #include "transmission.h"
 #include "crypto-utils.h"
+#include "log.h"
 #include "session-id.h"
 #include "utils.h"
 
@@ -22,6 +45,11 @@ struct tr_session_id
   char   * current_value;
   char   * previous_value;
   time_t   expires_at;
+
+#if defined (HAVE_SEMAPHORES)
+  tr_semaphore_t current_semaphore;
+  tr_semaphore_t previous_semaphore;
+#endif
 };
 
 static char *
@@ -40,6 +68,79 @@ generate_new_session_id_value (void)
   return buf;
 }
 
+#if defined (HAVE_SEMAPHORES)
+
+static char *
+get_session_id_semaphore_name (const char * session_id)
+{
+  return tr_strdup_printf (SEMAPHORE_NAME_PREFIX "%s", session_id);
+}
+
+static tr_semaphore_t
+create_session_id_semaphore (const char * session_id)
+{
+  if (session_id == NULL)
+    return BAD_SEMAPHORE;
+
+  char           * semaphore_name = get_session_id_semaphore_name (session_id);
+  tr_semaphore_t   semaphore;
+  char           * error_message = NULL;
+
+#if defined (HAVE_POSIX_SEMAPHORES)
+
+  semaphore = sem_open (semaphore_name, O_CREAT | O_EXCL, 0666, 0);
+
+  if (semaphore == BAD_SEMAPHORE)
+    {
+      const int error_code = errno;
+      error_message = tr_strdup_printf ("sem_open(%s) failed (%d): %s", semaphore_name, error_code, tr_strerror (error_code));
+    }
+
+#elif defined (HAVE_WIN32_SEMAPHORES)
+
+  semaphore = CreateSemaphoreA (NULL, 0, 1, semaphore_name);
+
+  const DWORD error_code = GetLastError ();
+  if (semaphore == BAD_SEMAPHORE || error_code == ERROR_ALREADY_EXISTS)
+    {
+      char * tmp_message = tr_win32_format_message (error_code);
+      error_message = tr_strdup_printf ("CreateSemaphore(%s) failed (0x%08x): %s", semaphore_name, error_code, tmp_message);
+      tr_free (tmp_message);
+
+      if (semaphore != BAD_SEMAPHORE)
+        {
+          CloseHandle (semaphore);
+          semaphore = BAD_SEMAPHORE;
+        }
+    }
+
+#endif
+
+  if (error_message != NULL)
+    {
+      tr_logAddError ("Unable to create session semaphore: %s", error_message);
+      tr_free (error_message);
+    }
+
+  tr_free (semaphore_name);
+  return semaphore;
+}
+
+static void
+destroy_semaphore (tr_semaphore_t semaphore)
+{
+  if (semaphore == BAD_SEMAPHORE)
+    return;
+
+#if defined (HAVE_POSIX_SEMAPHORES)
+  sem_close (semaphore);
+#elif defined (HAVE_WIN32_SEMAPHORES)
+  CloseHandle (semaphore);
+#endif
+}
+
+#endif
+
 tr_session_id_t
 tr_session_id_new (void)
 {
@@ -51,6 +152,13 @@ tr_session_id_free (tr_session_id_t session_id)
 {
   if (session_id == NULL)
     return;
+
+#if defined (HAVE_SEMAPHORES)
+
+  destroy_semaphore (session_id->previous_semaphore);
+  destroy_semaphore (session_id->current_semaphore);
+
+#endif
 
   tr_free (session_id->previous_value);
   tr_free (session_id->current_value);
@@ -67,8 +175,79 @@ tr_session_id_get_current (tr_session_id_t session_id)
       tr_free (session_id->previous_value);
       session_id->previous_value = session_id->current_value;
       session_id->current_value = generate_new_session_id_value ();
+
+#if defined (HAVE_SEMAPHORES)
+
+      destroy_semaphore (session_id->previous_semaphore);
+      session_id->previous_semaphore = session_id->current_semaphore;
+      session_id->current_semaphore = create_session_id_semaphore (session_id->current_value);
+
+#endif
+
       session_id->expires_at = now + SESSION_ID_DURATION_SEC;
     }
 
   return session_id->current_value;
+}
+
+bool
+tr_session_id_is_local (const char * session_id)
+{
+  bool ret = false;
+
+  if (session_id != NULL)
+    {
+#if defined (HAVE_SEMAPHORES)
+
+      char           * semaphore_name = get_session_id_semaphore_name (session_id);
+      tr_semaphore_t   semaphore;
+      char           * error_message = NULL;
+
+#if defined (HAVE_POSIX_SEMAPHORES)
+
+      semaphore = sem_open (semaphore_name, 0);
+
+      if (semaphore == BAD_SEMAPHORE)
+        {
+          const int error_code = errno;
+          if (error_code != ENOENT)
+            {
+              error_message = tr_strdup_printf ("sem_open(%s) failed (%d): %s", semaphore_name, error_code, tr_strerror (error_code));
+            }
+        }
+
+#elif defined (HAVE_WIN32_SEMAPHORES)
+
+      semaphore = OpenSemaphoreA (SYNCHRONIZE, FALSE, semaphore_name);
+
+      if (semaphore == BAD_SEMAPHORE)
+        {
+          const DWORD error_code = GetLastError ();
+          if (error_code != ERROR_FILE_NOT_FOUND)
+            {
+              char * tmp_message = tr_win32_format_message (error_code);
+              error_message = tr_strdup_printf ("OpenSemaphore(%s) failed (0x%08x): %s", semaphore_name, error_code, tmp_message);
+              tr_free (tmp_message);
+            }
+        }
+
+#endif
+
+      if (semaphore != BAD_SEMAPHORE)
+        {
+          destroy_semaphore (semaphore);
+          ret = true;
+        }
+      else if (error_message != NULL)
+        {
+          tr_logAddError ("Unable to open session semaphore: %s", error_message);
+          tr_free (error_message);
+        }
+
+      tr_free (semaphore_name);
+
+#endif
+    }
+
+  return ret;
 }

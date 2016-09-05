@@ -11,6 +11,7 @@
 #include <string.h>
 #include "transmission.h"
 #include "session.h"
+#include "session-id.h"
 #include "utils.h"
 #include "version.h"
 
@@ -45,4 +46,34 @@ testPeerId (void)
     return 0;
 }
 
-MAIN_SINGLE_TEST (testPeerId)
+static int
+test_session_id (void)
+{
+  tr_session_id_t session_id;
+  const char * session_id_str;
+
+  session_id = tr_session_id_new ();
+  check (session_id != NULL);
+
+  session_id_str = tr_session_id_get_current (session_id);
+  check (session_id_str != NULL);
+  check (strlen (session_id_str) == 48);
+
+  check (tr_session_id_is_local (session_id_str));
+
+  check (!tr_session_id_is_local (NULL));
+  check (!tr_session_id_is_local (""));
+  check (!tr_session_id_is_local ("test"));
+
+  tr_session_id_free (session_id);
+  return 0;
+}
+
+int
+main (void)
+{
+  const testFunc tests[] = { testPeerId,
+                             test_session_id };
+
+  return runTests (tests, NUM_TESTS (tests));
+}

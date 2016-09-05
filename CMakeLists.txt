@@ -444,6 +444,7 @@ endif()
 include(LargeFileSupport)
 
 set(NEEDED_HEADERS
+    semaphore.h
     stdbool.h
     sys/statvfs.h
     xfs/xfs.h
