@@ -166,6 +166,14 @@ bool             tr_ssha1_matches      (const char     * ssha1,
                                         const char     * plain_text);
 
 /**
+ * @brief Translate a block of bytes from base32 into raw form.
+ */
+void             tr_base32_decode      (const void     * input,
+                                        size_t           input_length,
+                                        void           * output,
+                                        size_t         * output_length);
+
+/**
  * @brief Translate a block of bytes into base64.
  * @return a newly-allocated null-terminated string that can be freed with tr_free ()
  */
