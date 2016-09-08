@@ -13,6 +13,7 @@
 #include <polarssl/ctr_drbg.h>
 #include <polarssl/dhm.h>
 #include <polarssl/error.h>
+#include <polarssl/md5.h>
 #include <polarssl/sha1.h>
 #include <polarssl/version.h>
 
@@ -155,6 +156,58 @@ tr_sha1_final (tr_sha1_ctx_t   handle,
 
 #if POLARSSL_VERSION_NUMBER >= 0x01030800
   sha1_free (handle);
+#endif
+
+  tr_free (handle);
+  return true;
+}
+
+/***
+****
+***/
+
+tr_md5_ctx_t
+tr_md5_init (void)
+{
+  md5_context * handle = tr_new0 (md5_context, 1);
+
+#if POLARSSL_VERSION_NUMBER >= 0x01030800
+  md5_init (handle);
+#endif
+
+  md5_starts (handle);
+  return handle;
+}
+
+bool
+tr_md5_update (tr_md5_ctx_t   handle,
+               const void   * data,
+               size_t         data_length)
+{
+  assert (handle != NULL);
+
+  if (data_length == 0)
+    return true;
+
+  assert (data != NULL);
+
+  md5_update (handle, data, data_length);
+  return true;
+}
+
+bool
+tr_md5_final (tr_md5_ctx_t   handle,
+              uint8_t      * hash)
+{
+  if (hash != NULL)
+    {
+      assert (handle != NULL);
+
+      md5_finish (handle, hash);
+    }
+
+#if POLARSSL_VERSION_NUMBER >= 0x01030800
+  md5_free (handle);
 #endif
 
   tr_free (handle);

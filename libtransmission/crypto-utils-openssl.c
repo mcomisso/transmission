@@ -18,6 +18,7 @@
 #include <openssl/dh.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
+#include <openssl/md5.h>
 #include <openssl/rand.h>
 #include <openssl/opensslv.h>
 
@@ -100,22 +101,22 @@ check_openssl_pointer (void       * pointer,
 ****
 ***/
 
-tr_sha1_ctx_t
-tr_sha1_init (void)
+static EVP_MD_CTX *
+openssl_evp_digest_context_init (const EVP_MD * algo)
 {
   EVP_MD_CTX * handle = EVP_MD_CTX_create ();
 
-  if (check_result (EVP_DigestInit_ex (handle, EVP_sha1 (), NULL)))
+  if (check_result (EVP_DigestInit_ex (handle, algo, NULL)))
     return handle;
 
   EVP_MD_CTX_destroy (handle);
   return NULL;
 }
 
-bool
-tr_sha1_update (tr_sha1_ctx_t   handle,
-                const void    * data,
-                size_t          data_length)
+static bool
+openssl_evp_digest_context_update (EVP_MD_CTX * handle,
+                                   const void * data,
+                                   size_t       data_length)
 {
   assert (handle != NULL);
 
@@ -127,9 +128,10 @@ tr_sha1_update (tr_sha1_ctx_t   handle,
   return check_result (EVP_DigestUpdate (handle, data, data_length));
 }
 
-bool
-tr_sha1_final (tr_sha1_ctx_t   handle,
-               uint8_t       * hash)
+static bool
+openssl_evp_digest_context_final (EVP_MD_CTX   * handle,
+                                  uint8_t      * hash,
+                                  unsigned int   expected_hash_length)
 {
   bool ret = true;
 
@@ -141,11 +143,61 @@ tr_sha1_final (tr_sha1_ctx_t   handle,
 
       ret = check_result (EVP_DigestFinal_ex (handle, hash, &hash_length));
 
-      assert (!ret || hash_length == SHA_DIGEST_LENGTH);
+      assert (!ret || hash_length == expected_hash_length);
     }
 
   EVP_MD_CTX_destroy (handle);
   return ret;
+}
+
+/***
+****
+***/
+
+tr_sha1_ctx_t
+tr_sha1_init (void)
+{
+  return openssl_evp_digest_context_init (EVP_sha1 ());
+}
+
+bool
+tr_sha1_update (tr_sha1_ctx_t   handle,
+                const void    * data,
+                size_t          data_length)
+{
+  return openssl_evp_digest_context_update (handle, data, data_length);
+}
+
+bool
+tr_sha1_final (tr_sha1_ctx_t   handle,
+               uint8_t       * hash)
+{
+  return openssl_evp_digest_context_final (handle, hash, SHA_DIGEST_LENGTH);
+}
+
+/***
+****
+***/
+
+tr_md5_ctx_t
+tr_md5_init (void)
+{
+  return openssl_evp_digest_context_init (EVP_md5 ());
+}
+
+bool
+tr_md5_update (tr_md5_ctx_t   handle,
+               const void   * data,
+               size_t         data_length)
+{
+  return openssl_evp_digest_context_update (handle, data, data_length);
+}
+
+bool
+tr_md5_final (tr_md5_ctx_t   handle,
+              uint8_t      * hash)
+{
+  return openssl_evp_digest_context_final (handle, hash, MD5_DIGEST_LENGTH);
 }
 
 /***

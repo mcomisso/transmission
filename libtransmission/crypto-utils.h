@@ -24,8 +24,12 @@ extern "C" {
 *** @{
 **/
 
+#define MD5_DIGEST_LENGTH 16
+
  /** @brief Opaque SHA1 context type. */
 typedef void * tr_sha1_ctx_t;
+/** @brief Opaque MD5 context type. */
+typedef void * tr_md5_ctx_t;
  /** @brief Opaque RC4 context type. */
 typedef void * tr_rc4_ctx_t;
  /** @brief Opaque DH context type. */
@@ -57,6 +61,32 @@ bool             tr_sha1_update        (tr_sha1_ctx_t    handle,
  * @brief Finalize and export SHA1 hash, free hasher context.
  */
 bool             tr_sha1_final         (tr_sha1_ctx_t    handle,
+                                        uint8_t        * hash);
+
+/**
+ * @brief Generate a MD5 hash from one or more chunks of memory.
+ */
+bool             tr_md5                (uint8_t        * hash,
+                                        const void     * data1,
+                                        int              data1_length,
+                                                         ...) TR_GNUC_NULL_TERMINATED;
+
+/**
+ * @brief Allocate and initialize new MD5 hasher context.
+ */
+tr_md5_ctx_t     tr_md5_init           (void);
+
+/**
+ * @brief Update MD5 hash.
+ */
+bool             tr_md5_update         (tr_md5_ctx_t     handle,
+                                        const void     * data,
+                                        size_t           data_length);
+
+/**
+ * @brief Finalize and export MD5 hash, free hasher context.
+ */
+bool             tr_md5_final          (tr_md5_ctx_t     handle,
                                         uint8_t        * hash);
 
 /**

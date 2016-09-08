@@ -11,6 +11,7 @@
 #include <cyassl/ctaocrypt/arc4.h>
 #include <cyassl/ctaocrypt/dh.h>
 #include <cyassl/ctaocrypt/error-crypt.h>
+#include <cyassl/ctaocrypt/md5.h>
 #include <cyassl/ctaocrypt/random.h>
 #include <cyassl/ctaocrypt/sha.h>
 #include <cyassl/version.h>
@@ -146,6 +147,49 @@ tr_sha1_final (tr_sha1_ctx_t   handle,
 
   tr_free (handle);
   return ret;
+}
+
+/***
+****
+***/
+
+tr_md5_ctx_t
+tr_md5_init (void)
+{
+  Md5 * handle = tr_new (Md5, 1);
+  InitMd5 (handle);
+  return handle;
+}
+
+bool
+tr_md5_update (tr_md5_ctx_t   handle,
+               const void   * data,
+               size_t         data_length)
+{
+  assert (handle != NULL);
+
+  if (data_length == 0)
+    return true;
+
+  assert (data != NULL);
+
+  Md5Update (handle, data, data_length);
+  return true;
+}
+
+bool
+tr_md5_final (tr_md5_ctx_t   handle,
+              uint8_t      * hash)
+{
+  if (hash != NULL)
+    {
+      assert (handle != NULL);
+
+      Md5Final (handle, hash);
+    }
+
+  tr_free (handle);
+  return true;
 }
 
 /***

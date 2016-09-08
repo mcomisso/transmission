@@ -114,6 +114,25 @@ test_sha1 (void)
 }
 
 static int
+test_md5 (void)
+{
+  uint8_t hash[MD5_DIGEST_LENGTH];
+  uint8_t hash_[MD5_DIGEST_LENGTH];
+
+  check (tr_md5 (hash, "test", 4, NULL));
+  check (tr_md5_ (hash_, "test", 4, NULL));
+  check (memcmp (hash, "\x09\x8f\x6b\xcd\x46\x21\xd3\x73\xca\xde\x4e\x83\x26\x27\xb4\xf6", MD5_DIGEST_LENGTH) == 0);
+  check (memcmp (hash, hash_, MD5_DIGEST_LENGTH) == 0);
+
+  check (tr_md5 (hash, "1", 1, "22", 2, "333", 3, NULL));
+  check (tr_md5_ (hash_, "1", 1, "22", 2, "333", 3, NULL));
+  check (memcmp (hash, "\x9c\x7c\xc2\xcd\xe1\x93\x96\x66\xd3\x14\x37\x8b\x18\x85\x77\x21", MD5_DIGEST_LENGTH) == 0);
+  check (memcmp (hash, hash_, MD5_DIGEST_LENGTH) == 0);
+
+  return 0;
+}
+
+static int
 test_ssha1 (void)
 {
   const char * const test_data[] =
@@ -353,6 +372,7 @@ main (void)
   const testFunc tests[] = { test_torrent_hash,
                              test_encrypt_decrypt,
                              test_sha1,
+                             test_md5,
                              test_ssha1,
                              test_random,
                              test_base32,

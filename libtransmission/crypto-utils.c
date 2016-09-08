@@ -83,6 +83,45 @@ tr_sha1 (uint8_t    * hash,
 ****
 ***/
 
+bool
+tr_md5 (uint8_t    * hash,
+        const void * data1,
+        int          data1_length,
+                     ...)
+{
+  tr_md5_ctx_t md5;
+
+  if ((md5 = tr_md5_init ()) == NULL)
+    return false;
+
+  if (tr_md5_update (md5, data1, data1_length))
+    {
+      va_list vl;
+      const void * data;
+
+      va_start (vl, data1_length);
+      while ((data = va_arg (vl, const void *)) != NULL)
+        {
+          const int data_length = va_arg (vl, int);
+          assert (data_length >= 0);
+          if (!tr_md5_update (md5, data, data_length))
+            break;
+        }
+      va_end (vl);
+
+      /* did we reach the end of argument list? */
+      if (data == NULL)
+        return tr_md5_final (md5, hash);
+    }
+
+  tr_md5_final (md5, NULL);
+  return false;
+}
+
+/***
+****
+***/
+
 int
 tr_rand_int (int upper_bound)
 {

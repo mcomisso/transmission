@@ -16,6 +16,7 @@
 #define KEY_LEN KEY_LEN_
 
 #define tr_sha1_ctx_t tr_sha1_ctx_t_
+#define tr_md5_ctx_t tr_md5_ctx_t_
 #define tr_rc4_ctx_t tr_rc4_ctx_t_
 #define tr_dh_ctx_t tr_dh_ctx_t_
 #define tr_dh_secret_t tr_dh_secret_t_
@@ -36,6 +37,10 @@
 #define tr_sha1_init tr_sha1_init_
 #define tr_sha1_update tr_sha1_update_
 #define tr_sha1_final tr_sha1_final_
+#define tr_md5 tr_md5_
+#define tr_md5_init tr_md5_init_
+#define tr_md5_update tr_md5_update_
+#define tr_md5_final tr_md5_final_
 #define tr_rc4_new tr_rc4_new_
 #define tr_rc4_free tr_rc4_free_
 #define tr_rc4_set_key tr_rc4_set_key_
@@ -75,6 +80,7 @@
 #undef KEY_LEN_
 
 #undef tr_sha1_ctx_t
+#undef tr_md5_ctx_t
 #undef tr_rc4_ctx_t
 #undef tr_dh_ctx_t
 #undef tr_dh_secret_t
@@ -95,6 +101,10 @@
 #undef tr_sha1_init
 #undef tr_sha1_update
 #undef tr_sha1_final
+#undef tr_md5
+#undef tr_md5_init
+#undef tr_md5_update
+#undef tr_md5_final
 #undef tr_rc4_new
 #undef tr_rc4_free
 #undef tr_rc4_set_key
@@ -127,6 +137,7 @@
 #define KEY_LEN_ KEY_LEN
 
 #define tr_sha1_ctx_t_ tr_sha1_ctx_t
+#define tr_md5_ctx_t_ tr_md5_ctx_t
 #define tr_rc4_ctx_t_ tr_rc4_ctx_t
 #define tr_dh_ctx_t_ tr_dh_ctx_t
 #define tr_dh_secret_t_ tr_dh_secret_t
@@ -147,6 +158,10 @@
 #define tr_sha1_init_ tr_sha1_init
 #define tr_sha1_update_ tr_sha1_update
 #define tr_sha1_final_ tr_sha1_final
+#define tr_md5_ tr_md5
+#define tr_md5_init_ tr_md5_init
+#define tr_md5_update_ tr_md5_update
+#define tr_md5_final_ tr_md5_final
 #define tr_rc4_new_ tr_rc4_new
 #define tr_rc4_free_ tr_rc4_free
 #define tr_rc4_set_key_ tr_rc4_set_key
