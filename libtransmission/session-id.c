@@ -6,12 +6,12 @@
  *
  */
 
-#if defined (HAVE_SEMAPHORE_H)
- #define HAVE_SEMAPHORES
- #define HAVE_POSIX_SEMAPHORES
-#elif defined (_WIN32)
+#if defined (_WIN32)
  #define HAVE_SEMAPHORES
  #define HAVE_WIN32_SEMAPHORES
+#elif defined (HAVE_SEMAPHORE_H)
+ #define HAVE_SEMAPHORES
+ #define HAVE_POSIX_SEMAPHORES
 #endif
 
 #include <assert.h>
