@@ -14,6 +14,7 @@
  #define HAVE_WIN32_SEMAPHORES
 #endif
 
+#include <assert.h>
 #include <string.h>
 #include <time.h>
 
@@ -21,12 +22,12 @@
  #include <errno.h>
  #include <fcntl.h>
  #include <semaphore.h>
- #define SEMAPHORE_NAME_PREFIX "/transmission-session-"
+ #define SEMAPHORE_NAME_PREFIX "/tr-"
  #define BAD_SEMAPHORE SEM_FAILED
  typedef sem_t * tr_semaphore_t;
 #elif defined (HAVE_WIN32_SEMAPHORES)
  #include <windows.h>
- #define SEMAPHORE_NAME_PREFIX "Global\\transmission-session-"
+ #define SEMAPHORE_NAME_PREFIX "Global\\tr-"
  #define BAD_SEMAPHORE NULL
  typedef HANDLE tr_semaphore_t;
 #endif
@@ -73,7 +74,20 @@ generate_new_session_id_value (void)
 static char *
 get_session_id_semaphore_name (const char * session_id)
 {
-  return tr_strdup_printf (SEMAPHORE_NAME_PREFIX "%s", session_id);
+  uint8_t session_id_md5[MD5_DIGEST_LENGTH];
+  tr_md5 (session_id_md5, session_id, (int) strlen (session_id), NULL);
+
+#ifndef NDEBUG
+  size_t session_id_md5_base32_size;
+  tr_base32_encode (session_id_md5, sizeof (session_id_md5), NULL, &session_id_md5_base32_size);
+  assert (session_id_md5_base32_size == 26);
+#endif
+
+  char session_id_md5_base32[26 + 1];
+  tr_base32_encode (session_id_md5, sizeof (session_id_md5), session_id_md5_base32, NULL);
+  session_id_md5_base32[26] = '\0';
+
+  return tr_strdup_printf (SEMAPHORE_NAME_PREFIX "%s", session_id_md5_base32);
 }
 
 static tr_semaphore_t
