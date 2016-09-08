@@ -191,6 +191,8 @@ tr_ssha1_matches (const char * ssha1,
 /* this base32 code converted from code by Robert Kaye and Gordon Mohr
  * and is public domain. see http://bitzi.com/publicdomain for more info */
 
+static const char * const base32_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+
 static const int base32_lookup[] =
 {
   0xFF,0xFF,0x1A,0x1B,0x1C,0x1D,0x1E,0x1F, /* '0', '1', '2', '3', '4', '5', '6', '7' */
@@ -206,6 +208,59 @@ static const int base32_lookup[] =
 };
 
 static const size_t base32_lookup_size = sizeof (base32_lookup) / sizeof (*base32_lookup);
+
+void
+tr_base32_encode (const void * input,
+                  size_t       input_length,
+                  void       * output,
+                  size_t     * output_length)
+{
+  const uint8_t * input_bytes = (const uint8_t*) input;
+  uint8_t       * output_bytes = (uint8_t*) output;
+
+  const size_t my_output_length = (input_length * 8 + 4) / 5;
+
+  if (output_length != NULL)
+    *output_length = my_output_length;
+
+  if (output == NULL)
+    return;
+
+  for (size_t i = 0, index = 0; i < input_length;)
+    {
+      size_t digit = 0;
+      size_t curr_byte;
+
+      curr_byte = input_bytes[i];
+
+      /* Is the current digit going to span a byte boundary? */
+      if (index > 3)
+        {
+          size_t next_byte;
+
+          if (i + 1 < input_length)
+            next_byte = input_bytes[i + 1];
+          else
+            next_byte = 0;
+
+          digit = curr_byte & (0xFF >> index);
+          index = (index + 5) % 8;
+          digit <<= index;
+          digit |= next_byte >> (8 - index);
+          ++i;
+        }
+      else
+        {
+          digit = (curr_byte >> (8 - (index + 5))) & 0x1F;
+          index = (index + 5) % 8;
+          if (index == 0)
+            ++i;
+        }
+
+      *output_bytes = (uint8_t) base32_chars[digit];
+      ++output_bytes;
+    }
+}
 
 void
 tr_base32_decode (const void * input,

@@ -52,6 +52,7 @@
 #define tr_rand_buffer tr_rand_buffer_
 #define tr_ssha1 tr_ssha1_
 #define tr_ssha1_matches tr_ssha1_matches_
+#define tr_base32_encode tr_base32_encode_
 #define tr_base32_decode tr_base32_decode_
 #define tr_base64_encode tr_base64_encode_
 #define tr_base64_encode_str tr_base64_encode_str_
@@ -110,6 +111,7 @@
 #undef tr_rand_buffer
 #undef tr_ssha1
 #undef tr_ssha1_matches
+#undef tr_base32_encode
 #undef tr_base32_decode
 #undef tr_base64_encode
 #undef tr_base64_encode_str
@@ -161,6 +163,7 @@
 #define tr_rand_buffer_ tr_rand_buffer
 #define tr_ssha1_ tr_ssha1
 #define tr_ssha1_matches_ tr_ssha1_matches
+#define tr_base32_encode_ tr_base32_encode
 #define tr_base32_decode_ tr_base32_decode
 #define tr_base64_encode_ tr_base64_encode
 #define tr_base64_encode_str_ tr_base64_encode_str
