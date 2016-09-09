@@ -158,7 +158,14 @@ destroy_semaphore (tr_semaphore_t semaphore)
 tr_session_id_t
 tr_session_id_new (void)
 {
-  return tr_new0 (struct tr_session_id, 1);
+  tr_session_id_t session_id = tr_new0 (struct tr_session_id, 1);
+
+#if defined (HAVE_SEMAPHORES)
+  session_id->current_semaphore = BAD_SEMAPHORE;
+  session_id->previous_semaphore = BAD_SEMAPHORE;
+#endif
+
+  return session_id;
 }
 
 void
