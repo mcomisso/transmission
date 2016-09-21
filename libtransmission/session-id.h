@@ -37,6 +37,8 @@ void tr_session_id_free (tr_session_id_t session_id);
  */
 const char * tr_session_id_get_current (tr_session_id_t session_id);
 
+bool tr_session_id_is_local (const char * session_id);
+
 #ifdef __cplusplus
 }
 #endif
